@@ -1,6 +1,5 @@
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
-from firebase_admin.firestore import FieldFilter
 from flask import (
     Flask, render_template, request, redirect,
     session, send_file, abort, jsonify, make_response, Response
@@ -164,7 +163,7 @@ def session_student_login():
         # Find the student linked to this student UID
         students_query = (
             db.collection("students")
-            .where(filter=FieldFilter("uid", "==", uid))
+            .where("uid", "==", uid)
             .limit(1)
             .stream()
         )
@@ -268,7 +267,7 @@ def dashboard():
     if bus_no:
         bus_query = (
             db.collection("buses")
-            .where(filter=FieldFilter("bus_number", "==", bus_no))
+            .where("bus_number", "==", bus_no)
             .limit(1)
             .stream()
         )
@@ -292,7 +291,7 @@ def dashboard():
             try:
                 count_query = (
                     db.collection("students")
-                    .where(filter=FieldFilter("bus_no", "==", bus_no))
+                    .where("bus_no", "==", bus_no)
                     .limit(100)
                     .stream()
                 )
@@ -381,7 +380,7 @@ def dashboard():
     try:
         fees_query = (
             db.collection("fees")
-            .where(filter=FieldFilter("studentId", "==", student_id))
+            .where("studentId", "==", student_id)
             .stream()
         )
         for doc in fees_query:
@@ -444,7 +443,7 @@ def student_dashboard():
     if bus_no:
         bus_query = (
             db.collection("buses")
-            .where(filter=FieldFilter("bus_number", "==", bus_no))
+            .where("bus_number", "==", bus_no)
             .limit(1)
             .stream()
         )
@@ -467,7 +466,7 @@ def student_dashboard():
             try:
                 count_query = (
                     db.collection("students")
-                    .where(filter=FieldFilter("bus_no", "==", bus_no))
+                    .where("bus_no", "==", bus_no)
                     .limit(100)
                     .stream()
                 )
@@ -537,7 +536,7 @@ def student_dashboard():
         # Overall history query (last 10 scans)
         logs_query = (
             db.collection("attendance_logs")
-            .where(filter=FieldFilter("student_id", "==", student_id))
+            .where("student_id", "==", student_id)
             .order_by("timestamp", direction="DESCENDING")
             .limit(10)
             .stream()
@@ -557,7 +556,7 @@ def student_dashboard():
     try:
         fees_query = (
             db.collection("fees")
-            .where(filter=FieldFilter("studentId", "==", student_id))
+            .where("studentId", "==", student_id)
             .stream()
         )
         for doc in fees_query:
