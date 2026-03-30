@@ -116,23 +116,21 @@ def session_login():
         uid   = decoded["uid"]
         email = decoded.get("email", "")
 
-        # Find the student linked to this parent email
-        students = (
-            db.collection("students")
-            .where(filter=FieldFilter("parent_email", "==", email))
-            .limit(10)
-            .stream()
-        )
-        student_list = list(students)
+        # Fetch parent data from Firestore using UID
+        parent_doc = db.collection("parents").document(uid).get()
+        
+        if not parent_doc.exists:
+            return jsonify({"error": "No parent record found for this account"}), 403
 
-        if not student_list:
-            return jsonify({"error": "No student found for this account"}), 403
+        parent_data = parent_doc.to_dict() or {}
+        student_id = parent_data.get("studentId")
+        
+        if not student_id:
+            return jsonify({"error": "No student linked to this parent"}), 403
 
-        # Store primary student (first match) in session
-        primary_doc = student_list[0]
         session["parent_uid"]   = uid
         session["parent_email"] = email
-        session["student_id"]   = primary_doc.id
+        session["student_id"]   = student_id
 
         return jsonify({"status": "success", "redirect": "/dashboard"})
 
