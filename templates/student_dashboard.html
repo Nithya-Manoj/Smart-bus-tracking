@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal – Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- ═══════ NAV ═══════ -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <div class="nav-brand-icon">🎓</div>
+            Student Portal
+        </div>
+        <div class="nav-sep"></div>
+        <div class="nav-welcome">
+            <i class="fa fa-circle-user"></i>
+            <span>{{ student.name or "Student" }}</span>
+        </div>
+        <a href="/student-logout">
+            <button class="nav-logout"><i class="fa fa-right-from-bracket"></i> Logout</button>
+        </a>
+    </nav>
+
+    <!-- ═══════ PAGE ═══════ -->
+    <div class="page">
+
+        <!-- Greeting -->
+        <div class="page-top">
+            <div>
+                <h1>Hello, {{ student.name or "Student" }} ✨</h1>
+                <p>Welcome to your real-time bus tracking and info dashboard</p>
+            </div>
+            {% if student.status == "active" %}
+            <span class="pill pill-green"><i class="fa fa-circle-check"></i> Active</span>
+            {% elif student.status %}
+            <span class="pill pill-amber">{{ student.status | capitalize }}</span>
+            {% endif %}
+        </div>
+
+        <!-- ══════ STUDENT ══════ -->
+        <div class="card" id="stu">
+            <div class="card-head">
+                <div class="card-ico lav"><i class="fa fa-user"></i></div>
+                <div>
+                    <div class="ch">Student Information</div>
+                    <div class="cs">Personal details & contact</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="stu-hero">
+
+                    {% if photo_b64 %}
+                    <img src="{{ photo_b64 }}" class="stu-photo" alt="Photo"
+                        onerror="this.style.display='none';document.getElementById('pp').style.display='flex'">
+                    {% else %}
+                    <img src="/student-photo/{{ student_id }}" class="stu-photo" alt="Photo"
+                        onerror="this.style.display='none';document.getElementById('pp').style.display='flex'">
+                    {% endif %}
+                    <div id="pp" class="stu-placeholder" style="display:none;"><i class="fa fa-user"></i></div>
+
+                    <div style="flex:1;min-width:0">
+                        <div class="stu-name">{{ student.name or "N/A" }}</div>
+                        <div class="stu-adm"><i class="fa fa-id-card" style="color:var(--lav-d)"></i>&nbsp;{{
+                            student.admission_number or "N/A" }}</div>
+                        <div class="chips">
+                            <span class="chip"><i class="fa fa-hashtag"></i> Roll: {{ student.rollNumber or
+                                student.roll_number or student.admission_number or "N/A" }}</span>
+                            <span class="chip"><i class="fa fa-phone"></i> {{ student.phone_number or "N/A" }}</span>
+                            {% if student.stop_name or student.stop %}
+                            <span class="chip mint"><i class="fa fa-location-dot"></i> {{ student.stop_name or
+                                student.stop }}</span>
+                            {% endif %}
+                            {% if student.parent_phone_number %}
+                            <span class="chip peach"><i class="fa fa-user-tie"></i> {{ student.parent_phone_number
+                                }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══════ BUS ══════ -->
+        <div class="card" id="bus">
+            <div class="card-head">
+                <div class="card-ico mint"><i class="fa fa-bus"></i></div>
+                <div>
+                    <div class="ch">Bus & Driver</div>
+                    <div class="cs">Assigned vehicle details</div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if bus %}
+                <div class="tiles" style="margin-bottom:18px">
+
+                    <div class="tile">
+                        <label><i class="fa fa-bus"></i> Bus Number</label>
+                        <div class="v">{{ bus.bus_number or "N/A" }}</div>
+                    </div>
+
+                    <div class="tile">
+                        <label><i class="fa fa-circle-dot"></i> Status</label>
+                        <div class="v">
+                            {% if bus.status == "active" %}<span class="pill pill-green">● Active</span>
+                            {% elif bus.status %}<span class="pill pill-amber">{{ bus.status | capitalize }}</span>
+                            {% else %}<span class="pill pill-gray">N/A</span>{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="tile">
+                        <label><i class="fa fa-users"></i> Occupancy</label>
+                        {% set cur = bus.current_strength | int if bus.current_strength is not none else 0 %}
+                        {% set lim = bus.student_limit | int if bus.student_limit else 1 %}
+                        {% set pct = [(cur/lim*100)|int,100]|min %}
+                        <div class="cap-track">
+                            <div class="cap-fill"
+                                style="width:{{ pct }}%;background:{{ '#22C55E' if pct<80 else '#F59E0B' if pct<100 else '#EF4444' }};">
+                            </div>
+                        </div>
+                        <div class="cap-lbl">{{ cur }}/{{ lim }} students{% if pct>=100 %} &nbsp;<span
+                                class="pill pill-red" style="font-size:.62rem;padding:2px 7px">FULL</span>{% endif %}
+                        </div>
+                    </div>
+
+                    {% if driver %}
+                    <div class="tile">
+                        <label><i class="fa fa-id-badge"></i> Driver</label>
+                        <div class="v">{{ driver.name or "N/A" }}</div>
+                        {% if driver.phone %}
+                        <div class="text-muted" style="margin-top:5px">
+                            <a href="tel:{{ driver.phone }}" style="color:var(--lav-d);font-weight:600"><i
+                                    class="fa fa-phone"></i> {{ driver.phone }}</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                </div>
+
+                {% if bus_id %}
+                <div>
+                    <div
+                        style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">
+                        <i class="fa fa-file-image"></i>&nbsp;Bus Permit
+                    </div>
+                    {% if permit_b64 %}
+                    <img src="{{ permit_b64 }}" class="permit" alt="Permit" onerror="this.style.display='none'">
+                    {% else %}
+                    <img src="/bus-permit/{{ bus_id }}" class="permit" alt="Permit" onerror="this.style.display='none'">
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                {% else %}
+                <div class="empty">
+                    <div class="ei">🚌</div>
+                    <p>No bus assigned yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ══════ ROUTE ══════ -->
+        <div class="card" id="route">
+            <div class="card-head">
+                <div class="card-ico lav"><i class="fa fa-map-location-dot"></i></div>
+                <div>
+                    <div class="ch">Route Information</div>
+                    <div class="cs">Stop schedule and fees</div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if morning_stops or evening_stops %}
+                <div class="tab-row">
+                    <button class="tab-btn active" onclick="switchTab('m',this)"><i class="fa fa-sun"></i>
+                        Morning</button>
+                    <button class="tab-btn" onclick="switchTab('e',this)"><i class="fa fa-moon"></i> Evening</button>
+                </div>
+
+                <div id="tp-m">
+                    {% if morning_stops %}
+                    <div style="overflow-x:auto">
+                        <table class="dtbl">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Stop Name</th>
+                                    <th>Fee</th>
+                                    <th>Coordinates</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stop in morning_stops %}
+                                <tr class="{{ 'my-stop' if stop.name == student_stop else '' }}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ stop.name or "N/A" }}{% if stop.name == student_stop %}<span
+                                            class="stop-badge">Your Stop</span>{% endif %}</td>
+                                    <td>{{ '₹'~stop.fee if stop.fee is not none and stop.fee != '' else 'N/A' }}</td>
+                                    <td class="text-muted">{% if stop.lat and stop.lng %}{{
+                                        "%.4f"|format(stop.lat|float) }}, {{ "%.4f"|format(stop.lng|float) }}{% else
+                                        %}N/A{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<div class="empty">
+                        <div class="ei">🌅</div>
+                        <p>No morning stops configured.</p>
+                    </div>{% endif %}
+                </div>
+
+                <div id="tp-e" style="display:none">
+                    {% if evening_stops %}
+                    <div style="overflow-x:auto">
+                        <table class="dtbl">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Stop Name</th>
+                                    <th>Fee</th>
+                                    <th>Coordinates</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stop in evening_stops %}
+                                <tr class="{{ 'my-stop' if stop.name == student_stop else '' }}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ stop.name or "N/A" }}{% if stop.name == student_stop %}<span
+                                            class="stop-badge">Your Stop</span>{% endif %}</td>
+                                    <td>{{ '₹'~stop.fee if stop.fee is not none and stop.fee != '' else 'N/A' }}</td>
+                                    <td class="text-muted">{% if stop.lat and stop.lng %}{{
+                                        "%.4f"|format(stop.lat|float) }}, {{ "%.4f"|format(stop.lng|float) }}{% else
+                                        %}N/A{% endif %}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}<div class="empty">
+                        <div class="ei">🌆</div>
+                        <p>No evening stops configured.</p>
+                    </div>{% endif %}
+                </div>
+
+                {% else %}
+                <div class="empty">
+                    <div class="ei">🗺️</div>
+                    <p>No route configured for this bus yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ══════ FEE ══════ -->
+        <div class="card" id="fee">
+            <div class="card-head">
+                <div class="card-ico peach"><i class="fa fa-credit-card"></i></div>
+                <div>
+                    <div class="ch">Fee Records</div>
+                    <div class="cs">Payment status and history</div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if fees %}
+                <div style="overflow-x:auto">
+                    <table class="dtbl">
+                        <thead>
+                            <tr>
+                                <th>Stop Name</th>
+                                <th>Bus No</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Remark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fee in fees %}
+                            <tr>
+                                <td>{{ fee.stopName or "N/A" }}</td>
+                                <td>{{ fee.busNo or fee.busId or "N/A" }}</td>
+                                <td>₹{{ fee.amount }}</td>
+                                <td>{{ fee.dueDate or "N/A" }}</td>
+                                <td>
+                                    {% if fee.status == "paid" %}
+                                    <span class="pill pill-green"><i class="fa fa-check"></i> Paid</span>
+                                    {% else %}
+                                    <span class="pill pill-amber blink"><i class="fa fa-clock"></i> Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if fee.status != "paid" %}
+                                    <span class="text-muted" style="font-size: 0.8rem;"><i class="fa fa-circle-exclamation"></i> Only parents can pay</span>
+                                    {% else %}
+                                    <span class="text-muted" style="font-size: 0.8rem;">
+                                        {% if fee.paidAt is string %}
+                                        Paid {{ fee.paidAt[:10] }}
+                                        {% elif fee.paidAt %}
+                                        Paid {{ fee.paidAt.strftime('%Y-%m-%d') }}
+                                        {% endif %}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty">
+                    <div class="ei">💳</div>
+                    <p>No fee records available.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ══════ ATTENDANCE ══════ -->
+        <div class="card" id="att">
+            <div class="card-head">
+                <div class="card-ico cream"><i class="fa fa-clipboard-check"></i></div>
+                <div>
+                    <div class="ch">Attendance</div>
+                    <div class="cs">Live scan record & history</div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if attendance %}
+                <div class="att-tiles">
+                    <div class="att-tile">
+                        <label><i class="fa fa-circle-dot"></i> Today's Status</label>
+                        <div class="v">
+                            {% if attendance.status == "present" %}<span class="pill pill-green"><i
+                                    class="fa fa-check"></i> Present</span>
+                            {% elif attendance.status %}<span class="pill pill-red">{{ attendance.status | capitalize
+                                }}</span>
+                            {% else %}<span class="pill pill-gray">N/A</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="att-tile">
+                        <label><i class="fa fa-clock"></i> Last Scanned</label>
+                        <div class="v">{% set st = attendance.scanned_at or attendance.timestamp %}{% if st %}{{ st }}{%
+                            else %}<span class="text-muted">N/A</span>{% endif %}</div>
+                    </div>
+                    <div class="att-tile">
+                        <label><i class="fa fa-location-dot"></i> Location</label>
+                        <div class="v">{% set alat = attendance.lat or attendance.latitude %}{% set alng =
+                            attendance.lng or attendance.longitude %}{% if alat and alng %}{{ alat }}, {{ alng }}{% else
+                            %}<span class="text-muted">N/A</span>{% endif %}</div>
+                    </div>
+                    {% if attendance.session_id %}<div class="att-tile"><label><i class="fa fa-key"></i> Session</label>
+                        <div class="v" style="font-size:.73rem">{{ attendance.session_id }}</div>
+                    </div>{% endif %}
+                    {% if attendance.device_id %}<div class="att-tile"><label><i class="fa fa-mobile"></i>
+                            Device</label>
+                        <div class="v" style="font-size:.76rem">{{ attendance.device_id }}</div>
+                    </div>{% endif %}
+                </div>
+                {% else %}
+                <div class="empty">
+                    <div class="ei">📋</div>
+                    <p>No attendance record for today.</p>
+                </div>
+                {% endif %}
+                
+                {% if attendance_history %}
+                <hr style="margin: 20px 0; border:none; border-top: 1px solid var(--border);">
+                <div style="font-size:.85rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">
+                    <i class="fa fa-clock-rotate-left"></i>&nbsp;Recent History
+                </div>
+                <div style="overflow-x:auto">
+                    <table class="dtbl">
+                        <thead>
+                            <tr>
+                                <th>Scan Time</th>
+                                <th>Status</th>
+                                <th>Location (Lat, Lng)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in attendance_history %}
+                            <tr>
+                                <td>{{ log.timestamp_str or "N/A" }}</td>
+                                <td>
+                                    {% if log.status == "present" %}
+                                    <span class="pill pill-green"><i class="fa fa-check"></i> Present</span>
+                                    {% elif log.status %}
+                                    <span class="pill pill-red">{{ log.status | capitalize }}</span>
+                                    {% else %}
+                                    <span class="pill pill-gray">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-muted">
+                                    {% set log_lat = log.lat or log.latitude %}
+                                    {% set log_lng = log.lng or log.longitude %}
+                                    {% if log_lat and log_lng %}
+                                        {{ log_lat }}, {{ log_lng }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        function switchTab(t, btn) {
+            ['m', 'e'].forEach(id => { const p = document.getElementById('tp-' + id); if (p) p.style.display = id === t ? 'block' : 'none' });
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+
+</html>
