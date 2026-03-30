@@ -87,101 +87,13 @@ def normalize_stops(stops):
     return normalized
 
 
-# ── LOGIN (GET only — POST handled client-side via Firebase Auth JS) ────
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if "parent_uid" in session:
-        return redirect("/dashboard")
-    elif "student_uid" in session:
-        return redirect("/student-dashboard")
-    return render_template("login.html")
-
-
-# ── SESSION LOGIN (called by frontend after Firebase Auth) ─────────────
-@app.route("/sessionLogin", methods=["POST"])
-def session_login():
-    """
-    Frontend sends a Firebase ID token after successful signInWithEmailAndPassword.
-    We verify it server-side and store the UID + email in Flask session.
-    """
-    data = request.get_json(silent=True) or {}
-    id_token = data.get("idToken", "")
-
-    if not id_token:
-        return jsonify({"error": "Missing ID token"}), 400
-
-    try:
-        decoded = auth.verify_id_token(id_token)
-        uid   = decoded["uid"]
-        email = decoded.get("email", "")
-
-        # Fetch parent data from Firestore using UID
-        parent_doc = db.collection("parents").document(uid).get()
-        
-        if not parent_doc.exists:
-            return jsonify({"error": "No parent record found for this account"}), 403
-
-        parent_data = parent_doc.to_dict() or {}
-        student_id = parent_data.get("studentId")
-        
-        if not student_id:
-            return jsonify({"error": "No student linked to this parent"}), 403
-
-        session["parent_uid"]   = uid
-        session["parent_email"] = email
-        session["student_id"]   = student_id
-
-        return jsonify({"status": "success", "redirect": "/dashboard"})
-
-    except Exception as e:
-        return jsonify({"error": f"Authentication failed: {str(e)}"}), 401
-
-
-# ── STUDENT LOGIN endpoints ────────────────────────────────────────────
 @app.route("/student-login", methods=["GET", "POST"])
 def student_login():
-    if "student_uid" in session:
+    if request.cookies.get("student_token"):
         return redirect("/student-dashboard")
-    elif "parent_uid" in session:
+    elif request.cookies.get("token"):
         return redirect("/dashboard")
     return render_template("student-login.html")
-
-
-@app.route("/sessionStudentLogin", methods=["POST"])
-def session_student_login():
-    data = request.get_json(silent=True) or {}
-    id_token = data.get("idToken", "")
-
-    if not id_token:
-        return jsonify({"error": "Missing ID token"}), 400
-
-    try:
-        decoded = auth.verify_id_token(id_token)
-        uid   = decoded["uid"]
-        email = decoded.get("email", "")
-
-        # Find the student linked to this student UID
-        students_query = (
-            db.collection("students")
-            .where("uid", "==", uid)
-            .limit(1)
-            .stream()
-        )
-        student_list = list(students_query)
-
-        if not student_list:
-            return jsonify({"error": "Student not registered"}), 403
-
-        target_student = student_list[0]
-        session.clear()
-        session["student_uid"]   = uid
-        session["student_email"] = email
-        session["student_doc_id"]   = target_student.id
-
-        return jsonify({"status": "success", "redirect": "/student-dashboard"})
-
-    except Exception as e:
-        return jsonify({"error": f"Authentication failed: {str(e)}"}), 401
 
 
 # ── IMAGE ROUTES  (serve admin-uploaded files as fallback) ─────────────
@@ -240,23 +152,32 @@ def _serve_base64_image(b64_string: str) -> Response:
 # ── DASHBOARD ──────────────────────────────────────────────────────────
 @app.route("/dashboard")
 def dashboard():
-    # Enforce parent access only
-    if "parent_uid" not in session:
+    token = request.cookies.get("token")
+    if not token:
         return redirect("/")
 
-    # Ensure backward compatibility with old sessions if student_id is missing somehow
-    if "student_id" not in session:
-        return redirect("/")
+    try:
+        decoded = auth.verify_id_token(token)
+        uid = decoded.get("uid")
 
-    student_id  = session["student_id"]
-    student_doc = db.collection("students").document(student_id).get()
+        parent_doc = db.collection("parents").document(uid).get()
+        if not parent_doc.exists:
+            return render_template("login.html", error="No parent record found for this account.")
 
-    if not student_doc.exists:
-        session.clear()
-        return redirect("/")
+        parent_data = parent_doc.to_dict() or {}
+        student_id = parent_data.get("studentId")
+        
+        if not student_id:
+            return render_template("login.html", error="No student linked to this parent.")
 
-    student    = student_doc.to_dict() or {}
-    student_id = student_doc.id  # canonical ID
+        student_doc = db.collection("students").document(student_id).get()
+        if not student_doc.exists:
+            return redirect("/")
+            
+        student = student_doc.to_dict() or {}
+        student_id = student_doc.id  # canonical ID
+    except Exception as e:
+        return render_template("login.html", error=f"Authentication error: {e}")
 
     # ── 1. Bus Details ─────────────────────────────────────────────────
     bus_data   = None
@@ -418,21 +339,30 @@ def dashboard():
 # ── STUDENT DASHBOARD ──────────────────────────────────────────────────
 @app.route("/student-dashboard")
 def student_dashboard():
-    if "student_uid" not in session:
+    token = request.cookies.get("student_token")
+    if not token:
         return redirect("/student-login")
 
-    student_id  = session.get("student_doc_id")
-    if not student_id:
-        session.clear()
-        return redirect("/student-login")
+    try:
+        decoded = auth.verify_id_token(token)
+        uid = decoded.get("uid")
 
-    student_doc = db.collection("students").document(student_id).get()
+        students_query = (
+            db.collection("students")
+            .where("uid", "==", uid)
+            .limit(1)
+            .stream()
+        )
+        student_list = list(students_query)
 
-    if not student_doc.exists:
-        session.clear()
-        return redirect("/student-login")
+        if not student_list:
+             return render_template("student-login.html", error="Student not registered.")
 
-    student    = student_doc.to_dict() or {}
+        target_student = student_list[0]
+        student_id = target_student.id
+        student = target_student.to_dict() or {}
+    except Exception as e:
+        return render_template("student-login.html", error=f"Authentication error: {e}")
 
     # ── 1. Bus Details ─────────────────────────────────────────────────
     bus_data   = None
@@ -593,7 +523,14 @@ def student_dashboard():
 # ── PAY FEE ────────────────────────────────────────────────────────────
 @app.route("/pay_fee/<fee_id>")
 def pay_fee(fee_id):
-    if "parent_uid" not in session:
+    token = request.cookies.get("token")
+    if not token:
+        return redirect("/")
+        
+    try:
+        decoded = auth.verify_id_token(token)
+        email = decoded.get("email", "")
+    except Exception:
         return redirect("/")
 
     try:
@@ -603,7 +540,7 @@ def pay_fee(fee_id):
         update_data = {
             "status": "paid",
             "paidAt": datetime.datetime.utcnow(),
-            "paidBy": session.get("parent_email", "")
+            "paidBy": email
         }
             
         fee_ref.update(update_data)
@@ -615,16 +552,27 @@ def pay_fee(fee_id):
     return redirect("/dashboard")
 
 
+# ── LOGIN ──────────────────────────────────────────────────────────────
+@app.route("/", methods=["GET", "POST"])
+def login():
+    if request.cookies.get("token"):
+        return redirect("/dashboard")
+    elif request.cookies.get("student_token"):
+        return redirect("/student-dashboard")
+    return render_template("login.html")
+
 # ── LOGOUT ─────────────────────────────────────────────────────────────
 @app.route("/logout")
 def logout():
-    session.clear()
-    return redirect("/")
+    resp = redirect("/")
+    resp.set_cookie("token", "", expires=0)
+    return resp
 
 @app.route("/student-logout")
 def student_logout():
-    session.clear()
-    return redirect("/student-login")
+    resp = redirect("/student-login")
+    resp.set_cookie("student_token", "", expires=0)
+    return resp
 
 
 # ── ERROR HANDLERS ─────────────────────────────────────────────────────
