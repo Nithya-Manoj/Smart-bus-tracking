@@ -633,10 +633,14 @@ def student_logout():
 # ── ERROR HANDLERS ─────────────────────────────────────────────────────
 @app.errorhandler(404)
 def not_found(_):
+    if request.path.startswith("/session"):
+        return jsonify({"error": "Endpoint not found."}), 404
     return render_template("login.html", error="Page not found."), 404
 
 @app.errorhandler(500)
 def server_error(e):
+    if request.path.startswith("/session"):
+        return jsonify({"error": f"Server error: {e}"}), 500
     return render_template("login.html", error=f"Server error: {e}"), 500
 
 

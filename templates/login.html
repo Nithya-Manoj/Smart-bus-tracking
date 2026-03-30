@@ -84,7 +84,14 @@
                 const cred = await signInWithEmailAndPassword(auth, email, pass);
                 const token = await cred.user.getIdToken(true);
                 const res = await fetch('/sessionLogin', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken: token }) });
-                const data = await res.json();
+                
+                let data;
+                try {
+                    data = await res.json();
+                } catch (e) {
+                    throw new Error("Server returned an invalid response. Check server logs for 500 errors.");
+                }
+                
                 if (!res.ok) throw new Error(data.error || 'Login failed.');
                 window.location.href = data.redirect || '/dashboard';
             } catch (err) {
