@@ -181,50 +181,90 @@
         });
         const auth = getAuth(firebaseApp);
 
-        // Safe JSON parser: never crashes on HTML error pages
-        async function safeApiJson(res) {
-            const text = await res.text();
-            try { return JSON.parse(text); }
-            catch { throw new Error('Server returned HTTP ' + res.status + ' (non-JSON). Check backend logs.'); }
+        function setStatus(msg) {
+            const el = document.querySelector('#loadingOverlay div:nth-child(2)');
+            if (el) el.textContent = msg;
         }
 
-        async function loadDashboard(user) {
-            let token;
-            try { token = user ? await user.getIdToken(true) : localStorage.getItem('student_token'); } catch(e) { token = localStorage.getItem('student_token'); }
-            if (!token) { window.location.href = '/student-login'; return; }
-            if (user) localStorage.setItem('student_token', token);
+        function showError(msg) {
+            document.getElementById('loadError').textContent = msg;
+            document.getElementById('loadError').style.display = 'block';
+            document.getElementById('loginLink').style.display = '';
+            setStatus('');
+        }
 
+        async function safeApiJson(res) {
+            const text = await res.text();
+            try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+            catch { return { ok: false, status: res.status, data: { error: 'Server error (HTTP ' + res.status + '). Check backend logs.' } }; }
+        }
+
+        async function boot() {
+            setStatus('Checking authentication…');
+            let token = localStorage.getItem('student_token');
+
+            if (!token) {
+                setStatus('No session found. Redirecting to login…');
+                setTimeout(() => { window.location.href = '/student-login'; }, 1500);
+                return;
+            }
+
+            setStatus('Fetching your dashboard data…');
+            let result;
             try {
-                let res = await fetch('/api/student-dashboard', { headers: { 'Authorization': 'Bearer ' + token } });
+                const res = await fetch('/api/student-dashboard', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                result = await safeApiJson(res);
+            } catch (e) {
+                showError('Cannot reach server: ' + e.message);
+                return;
+            }
 
-                // Token expired: silently get a fresh one from Firebase and retry once
-                if (res.status === 401) {
+            if (result.status === 401) {
+                setStatus('Session expired. Refreshing token…');
+                try {
                     const freshToken = await new Promise((resolve) => {
                         const unsub = onAuthStateChanged(auth, async (u) => {
                             unsub();
-                            if (u) { const t = await u.getIdToken(true); localStorage.setItem('student_token', t); resolve(t); }
+                            if (u) { try { resolve(await u.getIdToken(true)); } catch { resolve(null); } }
                             else resolve(null);
                         });
-                        setTimeout(() => resolve(null), 4000);
+                        setTimeout(() => resolve(null), 3000);
                     });
-                    if (!freshToken) { window.location.href = '/student-login'; return; }
-                    res = await fetch('/api/student-dashboard', { headers: { 'Authorization': 'Bearer ' + freshToken } });
-                }
-
-                const data = await safeApiJson(res);
-                if (!res.ok) {
-                    document.getElementById('loadError').textContent = data.error || 'Failed to load dashboard (HTTP ' + res.status + ').';
-                    document.getElementById('loadError').style.display = 'block';
-                    document.getElementById('loginLink').style.display = '';
+                    if (!freshToken) {
+                        setStatus('Session expired. Redirecting to login…');
+                        localStorage.removeItem('student_token');
+                        setTimeout(() => { window.location.href = '/student-login'; }, 1500);
+                        return;
+                    }
+                    localStorage.setItem('student_token', freshToken);
+                    setStatus('Token refreshed. Reloading dashboard…');
+                    const res2 = await fetch('/api/student-dashboard', {
+                        headers: { 'Authorization': 'Bearer ' + freshToken, 'Content-Type': 'application/json' }
+                    });
+                    result = await safeApiJson(res2);
+                } catch (e) {
+                    showError('Token refresh failed: ' + e.message);
                     return;
                 }
-                populate(data);
-            } catch (e) {
-                document.getElementById('loadError').textContent = 'Network error: ' + e.message;
-                document.getElementById('loadError').style.display = 'block';
-                document.getElementById('loginLink').style.display = '';
             }
+
+            if (!result.ok) {
+                showError(result.data.error || 'Dashboard load failed (HTTP ' + result.status + ').');
+                return;
+            }
+
+            setStatus('Rendering dashboard…');
+            populate(result.data);
         }
+
+        boot().catch(e => { showError('Unexpected error: ' + e.message); });
+
+        // Background: silently refresh stored token if Firebase has a session
+        onAuthStateChanged(auth, async (user) => {
+            if (user) { try { localStorage.setItem('student_token', await user.getIdToken()); } catch {} }
+        });
 
         function populate(d) {
             const s = d.student || {};
@@ -301,15 +341,8 @@
             document.getElementById('mainContent').style.display = '';
         }
 
-        // Wait for Firebase to restore session, then load dashboard
-        let loaded = false;
-        onAuthStateChanged(auth, async (user) => {
-            if (loaded) return;
-            loaded = true;
-            await loadDashboard(user);
-        });
-        // Fallback if Firebase auth takes too long (e.g. on Render cold start)
-        setTimeout(() => { if (!loaded) { loaded = true; loadDashboard(null); } }, 5000);
+
+
     </script>
 
 </body>

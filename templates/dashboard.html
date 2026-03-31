@@ -177,50 +177,100 @@
         });
         const auth = getAuth(firebaseApp);
 
-        // Safe JSON parser: never crashes on HTML error pages
-        async function safeApiJson(res) {
-            const text = await res.text();
-            try { return JSON.parse(text); }
-            catch { throw new Error('Server returned HTTP ' + res.status + ' (non-JSON). Check backend logs.'); }
+        function setStatus(msg) {
+            const el = document.querySelector('#loadingOverlay div:nth-child(2)');
+            if (el) el.textContent = msg;
         }
 
-        async function loadDashboard(user) {
-            let token;
-            try { token = user ? await user.getIdToken(true) : localStorage.getItem('parent_token'); } catch(e) { token = localStorage.getItem('parent_token'); }
-            if (!token) { window.location.href = '/'; return; }
-            if (user) localStorage.setItem('parent_token', token);
+        function showError(msg) {
+            document.getElementById('loadError').textContent = msg;
+            document.getElementById('loadError').style.display = 'block';
+            document.getElementById('loginLink').style.display = '';
+            setStatus('');
+        }
 
+        async function safeApiJson(res) {
+            const text = await res.text();
+            try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
+            catch { return { ok: false, status: res.status, data: { error: 'Server error (HTTP ' + res.status + '). Check backend logs.' } }; }
+        }
+
+        async function boot() {
+            // ── Step 1: Get token from localStorage (instant, no waiting) ──
+            setStatus('Checking authentication…');
+            let token = localStorage.getItem('parent_token');
+
+            if (!token) {
+                setStatus('No session found. Redirecting to login…');
+                setTimeout(() => { window.location.href = '/'; }, 1500);
+                return;
+            }
+
+            // ── Step 2: Fetch dashboard data ──
+            setStatus('Fetching your dashboard data…');
+            let result;
             try {
-                let res = await fetch('/api/dashboard', { headers: { 'Authorization': 'Bearer ' + token } });
+                const res = await fetch('/api/dashboard', {
+                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                });
+                result = await safeApiJson(res);
+            } catch (e) {
+                showError('Cannot reach server: ' + e.message + '. Please check your internet connection.');
+                return;
+            }
 
-                // Token expired: silently get a fresh one from Firebase and retry once
-                if (res.status === 401) {
+            // ── Step 3: If token expired (401), try Firebase refresh ──
+            if (result.status === 401) {
+                setStatus('Session expired. Refreshing token…');
+                try {
                     const freshToken = await new Promise((resolve) => {
                         const unsub = onAuthStateChanged(auth, async (u) => {
                             unsub();
-                            if (u) { const t = await u.getIdToken(true); localStorage.setItem('parent_token', t); resolve(t); }
+                            if (u) { try { resolve(await u.getIdToken(true)); } catch { resolve(null); } }
                             else resolve(null);
                         });
-                        setTimeout(() => resolve(null), 4000);
+                        setTimeout(() => resolve(null), 3000);
                     });
-                    if (!freshToken) { window.location.href = '/'; return; }
-                    res = await fetch('/api/dashboard', { headers: { 'Authorization': 'Bearer ' + freshToken } });
-                }
 
-                const data = await safeApiJson(res);
-                if (!res.ok) {
-                    document.getElementById('loadError').textContent = data.error || 'Failed to load dashboard (HTTP ' + res.status + ').';
-                    document.getElementById('loadError').style.display = 'block';
-                    document.getElementById('loginLink').style.display = '';
+                    if (!freshToken) {
+                        setStatus('Session has expired. Redirecting to login…');
+                        localStorage.removeItem('parent_token');
+                        setTimeout(() => { window.location.href = '/'; }, 1500);
+                        return;
+                    }
+
+                    localStorage.setItem('parent_token', freshToken);
+                    setStatus('Token refreshed. Reloading dashboard…');
+                    const res2 = await fetch('/api/dashboard', {
+                        headers: { 'Authorization': 'Bearer ' + freshToken, 'Content-Type': 'application/json' }
+                    });
+                    result = await safeApiJson(res2);
+                } catch (e) {
+                    showError('Token refresh failed: ' + e.message);
                     return;
                 }
-                populate(data);
-            } catch (e) {
-                document.getElementById('loadError').textContent = 'Network error: ' + e.message;
-                document.getElementById('loadError').style.display = 'block';
-                document.getElementById('loginLink').style.display = '';
             }
+
+            // ── Step 4: Handle final errors ──
+            if (!result.ok) {
+                showError(result.data.error || 'Dashboard load failed (HTTP ' + result.status + ').');
+                return;
+            }
+
+            // ── Step 5: Populate the page ──
+            setStatus('Rendering dashboard…');
+            populate(result.data);
         }
+
+        // Start immediately — don't wait for Firebase state
+        boot().catch(e => { showError('Unexpected error: ' + e.message); });
+
+        // Background: if Firebase has a user, silently refresh the stored token
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                try { localStorage.setItem('parent_token', await user.getIdToken()); } catch {}
+            }
+        });
 
         function populate(d) {
             const s = d.student || {};
