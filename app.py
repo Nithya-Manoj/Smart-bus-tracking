@@ -70,6 +70,33 @@ def options_handler(path):
     return add_cors(resp)
 
 
+@app.errorhandler(Exception)
+def handle_all_errors(e):
+    """Global catch-all: return JSON for API routes, HTML for page routes."""
+    import traceback
+    tb = traceback.format_exc()
+    print(f"[ERROR] {e}\n{tb}")
+    if request.path.startswith("/api/"):
+        return jsonify({"error": str(e)}), 500
+    # For page routes, let the default Flask error handling take over
+    from flask import abort as _abort
+    return make_response(f"<h2>500 Server Error</h2><pre>{e}</pre>", 500)
+
+
+@app.errorhandler(404)
+def handle_404(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Endpoint not found"}), 404
+    return make_response("<h2>404 Not Found</h2>", 404)
+
+
+@app.errorhandler(405)
+def handle_405(e):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Method not allowed"}), 405
+    return make_response("<h2>405 Method Not Allowed</h2>", 405)
+
+
 def get_uid_from_request():
     """
     Extract and verify a Firebase ID token from:

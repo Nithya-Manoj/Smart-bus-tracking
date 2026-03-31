@@ -181,6 +181,13 @@
         });
         const auth = getAuth(firebaseApp);
 
+        // Safe JSON parser: never crashes on HTML error pages
+        async function safeApiJson(res) {
+            const text = await res.text();
+            try { return JSON.parse(text); }
+            catch { throw new Error('Server returned HTTP ' + res.status + ' (non-JSON). Check backend logs.'); }
+        }
+
         async function loadDashboard(user) {
             let token;
             try { token = user ? await user.getIdToken(true) : localStorage.getItem('student_token'); } catch(e) { token = localStorage.getItem('student_token'); }
@@ -204,9 +211,9 @@
                     res = await fetch('/api/student-dashboard', { headers: { 'Authorization': 'Bearer ' + freshToken } });
                 }
 
-                const data = await res.json();
+                const data = await safeApiJson(res);
                 if (!res.ok) {
-                    document.getElementById('loadError').textContent = data.error || 'Failed to load dashboard (code ' + res.status + ').';
+                    document.getElementById('loadError').textContent = data.error || 'Failed to load dashboard (HTTP ' + res.status + ').';
                     document.getElementById('loadError').style.display = 'block';
                     document.getElementById('loginLink').style.display = '';
                     return;
