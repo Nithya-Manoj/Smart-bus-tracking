@@ -172,7 +172,7 @@ def dashboard():
 
         student_doc = db.collection("students").document(student_id).get()
         if not student_doc.exists:
-            return redirect("/")
+            return render_template("login.html", error=f"Student record '{student_id}' does not exist.")
             
         student = student_doc.to_dict() or {}
         student_id = student_doc.id  # canonical ID
@@ -575,14 +575,6 @@ def student_logout():
     return resp
 
 
-# ── ERROR HANDLERS ─────────────────────────────────────────────────────
-@app.errorhandler(Exception)
-def handle_exception(e):
-    code = getattr(e, 'code', 500)
-    if request.path.startswith("/session"):
-        return jsonify({"error": f"Server error: {e}"}), code
-    return render_template("login.html", error=f"Server error: {e}"), code
-
-
 if __name__ == "__main__":
-    app.run(debug=False, port=5050)
+    port = int(os.environ.get("PORT", 5050))
+    app.run(host="0.0.0.0", port=port, debug=True)

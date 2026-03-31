@@ -58,6 +58,13 @@
         </div>
     </div>
 
+    <script>
+        // Security fallback: Prevent users from silently breaking cookies by double-clicking the HTML file
+        if (window.location.protocol === 'file:') {
+            alert("You opened the HTML file directly instead of using the Flask server! Redirecting you to the active server...");
+            window.location.href = "http://127.0.0.1:5050/student-login";
+        }
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";

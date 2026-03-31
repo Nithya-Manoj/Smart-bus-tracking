@@ -58,6 +58,21 @@
         </div>
     </div>
 
+    <script>
+        // Security fallback: Prevent users from silently breaking cookies by double-clicking the HTML file
+        if (window.location.protocol === 'file:') {
+            alert("You opened the HTML file directly instead of using the Flask server! Redirecting you to the active server...");
+            window.location.href = "http://127.0.0.1:5050/";
+        }
+
+        // Fallback placeholder before Firebase module loads over the network
+        window.doLogin = () => {
+            const errBox = document.getElementById('errBox');
+            const errMsg = document.getElementById('errMsg');
+            errMsg.textContent = "Firebase authentication is still loading or was blocked by your network/adblocker! Please wait 5 seconds or allow googleapis.";
+            errBox.style.display = 'flex';
+        };
+    </script>
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -98,7 +113,5 @@
         };
         document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
     </script>
-
 </body>
-
 </html>
