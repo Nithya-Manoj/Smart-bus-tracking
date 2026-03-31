@@ -10,10 +10,21 @@ from flask import Flask, render_template, request, jsonify, make_response, send_
 app = Flask(__name__)
 
 SERVICE_ACCOUNT_PATH = os.path.join(os.path.dirname(__file__), "serviceAccountKey.json")
-cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
-firebase_admin.initialize_app(cred, {
-    "storageBucket": "bus-management-660f7.firebasestorage.app"
-})
+
+# Safety check for service account
+if not os.path.exists(SERVICE_ACCOUNT_PATH):
+    print(f"!!! CRITICAL ERROR: {SERVICE_ACCOUNT_PATH} not found !!!")
+    print("If you are on Render, make sure you uploaded the file via Git or Environment Variables.")
+
+try:
+    cred = credentials.Certificate(SERVICE_ACCOUNT_PATH)
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": "bus-management-660f7.firebasestorage.app"
+    })
+    print("[INIT] Firebase initialized successfully.")
+except Exception as e:
+    print(f"!!! CRITICAL ERROR: Firebase init failed: {e} !!!")
+
 db = firestore.client()
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 
@@ -178,8 +189,11 @@ def get_student_data(student_id):
             ts = d.get("timestamp")
             d["timestamp_str"] = ts.strftime("%Y-%m-%d %H:%M") if hasattr(ts, "strftime") else str(ts or "")
             att_history.append(d)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[FETCH ERROR] Attendance history fetch failed: {e}")
+        # If the error is 'The query requires an index', it provides a helpful link in the exception msg.
+        if "index" in str(e).lower():
+            print(f"!!! ACTION REQUIRED: Create Firestore index at: {e}")
 
     # ── Fees ─────────────────────────────────────────────
     fees = []
@@ -404,14 +418,24 @@ def bus_permit(bus_id):
 def handle_exception(e):
     import traceback
     print(f"[UNHANDLED] {type(e).__name__}: {e}\n{traceback.format_exc()}")
-    if request.path.startswith("/api/"):
-        return jsonify({"error": str(e)}), 500
-    return make_response(f"<h2>500 – {e}</h2>", 500)
+    
+    # Check if request path looks like an API call or if it's a JSON request
+    is_api = request.path.startswith("/api/") or request.headers.get("Accept") == "application/json"
+    
+    if is_api:
+        return jsonify({
+            "error": "Internal Server Error",
+            "message": str(e),
+            "type": type(e).__name__
+        }), 500
+        
+    return make_response(f"<h2>500 – {e}</h2><p>Check server logs for details.</p>", 500)
 
 @app.errorhandler(404)
 def handle_404(e):
-    if request.path.startswith("/api/"):
-        return jsonify({"error": "Not found"}), 404
+    is_api = request.path.startswith("/api/") or request.headers.get("Accept") == "application/json"
+    if is_api:
+        return jsonify({"error": "Route not found", "path": request.path}), 404
     return make_response("<h2>404 – Page not found</h2>", 404)
 
 
