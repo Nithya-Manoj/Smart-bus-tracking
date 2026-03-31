@@ -1,354 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Parent Portal – Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parent Portal – Dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-
 <body>
 
-    <!-- ═══════ NAV ═══════ -->
-    <nav class="navbar">
-        <div class="nav-brand">
-            <div class="nav-brand-icon">🚌</div>
-            BusTrack
-        </div>
-        <div class="nav-sep"></div>
-        <div class="nav-welcome">
-            <i class="fa fa-circle-user"></i>
-            <span id="nav-name">Loading…</span>
-        </div>
-        <button class="nav-logout" onclick="doLogout()"><i class="fa fa-right-from-bracket"></i> Logout</button>
-    </nav>
+<!-- ═══ NAV ═══ -->
+<nav class="navbar">
+  <div class="nav-brand"><div class="nav-brand-icon">🚌</div> BusTrack Parent</div>
+  <div class="nav-sep"></div>
+  <div class="nav-welcome"><i class="fa fa-circle-user"></i> <span id="navName">…</span></div>
+  <button class="nav-logout" onclick="doLogout()"><i class="fa fa-right-from-bracket"></i> Logout</button>
+</nav>
 
-    <!-- Loading overlay -->
-    <div id="loadingOverlay" style="position:fixed;inset:0;background:rgba(255,255,255,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:inherit">
-        <div style="font-size:2.5rem;margin-bottom:16px">🚌</div>
-        <div style="font-size:1.1rem;font-weight:600;color:#6366f1">Loading your dashboard…</div>
-        <div id="loadError" style="display:none;margin-top:18px;color:#ef4444;font-size:0.9rem;text-align:center;max-width:340px;padding:0 16px"></div>
-        <a id="loginLink" href="/" style="display:none;margin-top:12px;color:#6366f1;font-weight:600">← Go to Login</a>
+<!-- ═══ LOADING OVERLAY ═══ -->
+<div id="overlay" style="position:fixed;inset:0;background:rgba(255,255,255,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:inherit;gap:12px">
+  <div style="font-size:2.5rem">🚌</div>
+  <div id="loadStatus" style="font-size:1.1rem;font-weight:600;color:#6366f1">Starting up…</div>
+  <div id="loadErr" style="display:none;color:#ef4444;max-width:380px;text-align:center;padding:0 16px;font-size:.9rem"></div>
+  <a id="loginLink" href="/" style="display:none;color:#6366f1;font-weight:600;margin-top:8px">← Back to Login</a>
+</div>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<div id="main" class="page" style="display:none">
+
+  <div class="page-top">
+    <div><h1 id="greeting">Hello ✨</h1><p>Your real-time bus tracking dashboard</p></div>
+    <span id="statusPill"></span>
+  </div>
+
+  <!-- Student Info -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico lav"><i class="fa fa-user"></i></div>
+      <div><div class="ch">Student Information</div><div class="cs">Personal details &amp; contact</div></div>
     </div>
-
-    <!-- ═══════ PAGE ═══════ -->
-    <div class="page" id="mainContent" style="display:none">
-
-        <!-- Greeting -->
-        <div class="page-top">
-            <div>
-                <h1 id="greeting">Hello ✨</h1>
-                <p>Your child's real-time bus tracking dashboard</p>
-            </div>
-            <span id="statusPill"></span>
+    <div class="card-body">
+      <div class="stu-hero">
+        <img id="stuPhoto" class="stu-photo" alt="Photo" style="display:none" onerror="this.style.display='none';document.getElementById('stuPP').style.display='flex'">
+        <div id="stuPP" class="stu-placeholder" style="display:flex"><i class="fa fa-user"></i></div>
+        <div style="flex:1;min-width:0">
+          <div class="stu-name" id="stuName">—</div>
+          <div class="stu-adm"><i class="fa fa-id-card" style="color:var(--lav-d)"></i>&nbsp;<span id="stuAdm">—</span></div>
+          <div class="chips">
+            <span class="chip"><i class="fa fa-hashtag"></i> Roll: <span id="stuRoll">—</span></span>
+            <span class="chip"><i class="fa fa-phone"></i> <span id="stuPhone">—</span></span>
+            <span class="chip mint" id="stopChip" style="display:none"><i class="fa fa-location-dot"></i> <span id="stuStop"></span></span>
+          </div>
         </div>
-
-        <!-- ══════ STUDENT ══════ -->
-        <div class="card" id="stu">
-            <div class="card-head">
-                <div class="card-ico lav"><i class="fa fa-user"></i></div>
-                <div>
-                    <div class="ch">Student Information</div>
-                    <div class="cs">Personal details &amp; contact</div>
-                </div>
-            </div>
-            <div class="card-body">
-                <div class="stu-hero">
-                    <img id="stuPhoto" class="stu-photo" alt="Photo" style="display:none" onerror="this.style.display='none';document.getElementById('pp').style.display='flex'">
-                    <div id="pp" class="stu-placeholder" style="display:flex;"><i class="fa fa-user"></i></div>
-                    <div style="flex:1;min-width:0">
-                        <div class="stu-name" id="stuName">—</div>
-                        <div class="stu-adm"><i class="fa fa-id-card" style="color:var(--lav-d)"></i>&nbsp;<span id="stuAdm">—</span></div>
-                        <div class="chips">
-                            <span class="chip"><i class="fa fa-hashtag"></i> Roll: <span id="stuRoll">—</span></span>
-                            <span class="chip"><i class="fa fa-phone"></i> <span id="stuPhone">—</span></span>
-                            <span class="chip mint" id="stopChip" style="display:none"><i class="fa fa-location-dot"></i> <span id="stuStop"></span></span>
-                            <span class="chip peach" id="parentPhoneChip" style="display:none"><i class="fa fa-user-tie"></i> <span id="parentPhone"></span></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ══════ BUS ══════ -->
-        <div class="card" id="bus">
-            <div class="card-head">
-                <div class="card-ico mint"><i class="fa fa-bus"></i></div>
-                <div>
-                    <div class="ch">Bus &amp; Driver</div>
-                    <div class="cs">Assigned vehicle details</div>
-                </div>
-            </div>
-            <div class="card-body" id="busBody">
-                <div class="empty"><div class="ei">🚌</div><p>No bus assigned yet.</p></div>
-            </div>
-        </div>
-
-        <!-- ══════ ROUTE ══════ -->
-        <div class="card" id="route">
-            <div class="card-head">
-                <div class="card-ico lav"><i class="fa fa-map-location-dot"></i></div>
-                <div>
-                    <div class="ch">Route Information</div>
-                    <div class="cs">Stop schedule and fees</div>
-                </div>
-            </div>
-            <div class="card-body" id="routeBody">
-                <div class="empty"><div class="ei">🗺️</div><p>No route configured for this bus yet.</p></div>
-            </div>
-        </div>
-
-        <!-- ══════ FEE ══════ -->
-        <div class="card" id="fee">
-            <div class="card-head">
-                <div class="card-ico peach"><i class="fa fa-credit-card"></i></div>
-                <div>
-                    <div class="ch">Fee Records</div>
-                    <div class="cs">Payment status and history</div>
-                </div>
-            </div>
-            <div class="card-body" id="feeBody">
-                <div class="empty"><div class="ei">💳</div><p>No fee records available.</p></div>
-            </div>
-        </div>
-
-        <!-- ══════ ATTENDANCE ══════ -->
-        <div class="card" id="att">
-            <div class="card-head">
-                <div class="card-ico cream"><i class="fa fa-clipboard-check"></i></div>
-                <div>
-                    <div class="ch">Today's Attendance</div>
-                    <div class="cs">Live scan record</div>
-                </div>
-            </div>
-            <div class="card-body" id="attBody">
-                <div class="empty"><div class="ei">📋</div><p>No attendance record for today.</p></div>
-            </div>
-        </div>
-
+      </div>
     </div>
+  </div>
 
-    <script>
-        function switchTab(t, btn) {
-            ['m', 'e'].forEach(id => { const p = document.getElementById('tp-' + id); if (p) p.style.display = id === t ? 'block' : 'none'; });
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
+  <!-- Bus -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico mint"><i class="fa fa-bus"></i></div>
+      <div><div class="ch">Bus &amp; Driver</div><div class="cs">Assigned vehicle details</div></div>
+    </div>
+    <div id="busBody" class="card-body"><div class="empty"><div class="ei">🚌</div><p>No bus assigned.</p></div></div>
+  </div>
 
-        function doLogout() {
-            localStorage.removeItem('parent_token');
-            localStorage.removeItem('parent_uid');
-            window.location.href = '/logout';
-        }
+  <!-- Route -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico lav"><i class="fa fa-map-location-dot"></i></div>
+      <div><div class="ch">Route Information</div><div class="cs">Stop schedule and fees</div></div>
+    </div>
+    <div id="routeBody" class="card-body"><div class="empty"><div class="ei">🗺️</div><p>No route configured.</p></div></div>
+  </div>
 
-        function makeStopsTable(stops, studentStop) {
-            if (!stops || !stops.length) return '<div class="empty"><div class="ei">🌅</div><p>No stops configured.</p></div>';
-            const rows = stops.map((s, i) => {
-                const isMyStop = s.name === studentStop;
-                const fee = (s.fee !== null && s.fee !== undefined && s.fee !== '') ? '₹' + s.fee : 'N/A';
-                const coords = (s.lat && s.lng) ? parseFloat(s.lat).toFixed(4) + ', ' + parseFloat(s.lng).toFixed(4) : 'N/A';
-                return `<tr class="${isMyStop ? 'my-stop' : ''}"><td>${i + 1}</td><td>${s.name || 'N/A'}${isMyStop ? '<span class="stop-badge">Your Stop</span>' : ''}</td><td>${fee}</td><td class="text-muted">${coords}</td></tr>`;
-            }).join('');
-            return `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>#</th><th>Stop Name</th><th>Fee</th><th>Coordinates</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-        }
+  <!-- Fees -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico peach"><i class="fa fa-credit-card"></i></div>
+      <div><div class="ch">Fee Records</div><div class="cs">Payment status and history</div></div>
+    </div>
+    <div id="feeBody" class="card-body"><div class="empty"><div class="ei">💳</div><p>No fee records.</p></div></div>
+  </div>
 
-        window.payFee = async function(feeId, btn) {
-            btn.disabled = true; btn.textContent = 'Processing…';
-            try {
-                const token = localStorage.getItem('parent_token');
-                const res = await fetch('/api/pay_fee/' + feeId, { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } });
-                if (res.ok) { window.location.reload(); }
-                else { const d = await res.json(); alert('Payment failed: ' + (d.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
-            } catch(e) { alert('Network error: ' + e.message); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
-        };
-    </script>
+  <!-- Today's Attendance -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico cream"><i class="fa fa-clipboard-check"></i></div>
+      <div><div class="ch">Today's Attendance</div><div class="cs">Live scan record</div></div>
+    </div>
+    <div id="attBody" class="card-body"><div class="empty"><div class="ei">📋</div><p>No attendance record for today.</p></div></div>
+  </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+</div><!-- /main -->
 
-        const firebaseApp = initializeApp({
-            apiKey: "AIzaSyBxWLk4onnZ6GUv-xQZZ7XQqVq045Qwl9I",
-            authDomain: "bus-management-660f7.firebaseapp.com",
-            projectId: "bus-management-660f7",
-            appId: "1:1084362165063:web:c0ee7b0c39f2e590985a62"
+<script>
+  function switchTab(t, btn) {
+    document.getElementById('tp-m').style.display = t === 'm' ? '' : 'none';
+    document.getElementById('tp-e').style.display = t === 'e' ? '' : 'none';
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  function doLogout() {
+    localStorage.removeItem('parent_token');
+    localStorage.removeItem('parent_uid');
+    window.location.href = '/';
+  }
+
+  async function payFee(feeId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    const token = localStorage.getItem('parent_token');
+    try {
+      const res  = await fetch('/api/pay_fee/' + feeId, { method:'POST', headers:{ 'Authorization':'Bearer ' + token } });
+      const data = await res.json();
+      if (res.ok) { window.location.reload(); }
+      else { alert('Payment failed: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
+    } catch(e) { alert('Network error: ' + e.message); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
+  }
+
+  function stopsTable(stops, myStop) {
+    if (!stops || !stops.length) return '<div class="empty"><div class="ei">🛑</div><p>No stops.</p></div>';
+    const rows = stops.map((s, i) => {
+      const mine = s.name === myStop;
+      const fee  = (s.fee !== null && s.fee !== undefined) ? '₹' + s.fee : 'N/A';
+      const loc  = (s.lat && s.lng) ? (+s.lat).toFixed(4) + ', ' + (+s.lng).toFixed(4) : 'N/A';
+      return `<tr class="${mine?'my-stop':''}"><td>${i+1}</td><td>${s.name||'N/A'}${mine?'<span class="stop-badge">Your Stop</span>':''}</td><td>${fee}</td><td class="text-muted">${loc}</td></tr>`;
+    }).join('');
+    return `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>#</th><th>Stop</th><th>Fee</th><th>Coordinates</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function populate(d) {
+    const s   = d.student || {};
+    const bus = d.bus;
+    const drv = d.driver;
+    const myStop = d.student_stop || '';
+
+    // Nav + greeting
+    const name = s.name || 'Parent';
+    document.getElementById('navName').textContent  = name;
+    document.getElementById('greeting').textContent = 'Hello, ' + name + ' ✨';
+
+    // Status pill
+    if (s.status) {
+      const p = document.getElementById('statusPill');
+      p.className   = s.status === 'active' ? 'pill pill-green' : 'pill pill-amber';
+      p.innerHTML   = s.status === 'active' ? '<i class="fa fa-circle-check"></i> Active' : s.status;
+    }
+
+    // Student info
+    document.getElementById('stuName').textContent  = s.name  || 'N/A';
+    document.getElementById('stuAdm').textContent   = s.admission_number || 'N/A';
+    document.getElementById('stuRoll').textContent  = s.rollNumber || s.roll_number || s.admission_number || 'N/A';
+    document.getElementById('stuPhone').textContent = s.phone_number || s.phone || 'N/A';
+    if (myStop) { document.getElementById('stuStop').textContent = myStop; document.getElementById('stopChip').style.display = ''; }
+    const ph = document.getElementById('stuPhoto');
+    ph.src = d.photo_url || ''; ph.style.display = ''; document.getElementById('stuPP').style.display = 'none';
+
+    // Bus
+    if (bus) {
+      const cur = parseInt(bus.current_strength) || 0;
+      const lim = parseInt(bus.student_limit) || 1;
+      const pct = Math.min(Math.round(cur/lim*100),100);
+      const pc  = pct<80?'#22C55E':pct<100?'#F59E0B':'#EF4444';
+      const bs  = bus.status==='active'?'<span class="pill pill-green">● Active</span>':bus.status?`<span class="pill pill-amber">${bus.status}</span>`:'<span class="pill pill-gray">N/A</span>';
+      const dh  = drv ? `<div class="tile"><label><i class="fa fa-id-badge"></i> Driver</label><div class="v">${drv.name||'N/A'}</div>${drv.phone?`<div class="text-muted" style="margin-top:5px"><a href="tel:${drv.phone}" style="color:var(--lav-d);font-weight:600"><i class="fa fa-phone"></i> ${drv.phone}</a></div>`:''}</div>` : '';
+      const ph2 = d.permit_url ? `<div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="fa fa-file-image"></i>&nbsp;Bus Permit</div><img src="${d.permit_url}" class="permit" alt="Permit" onerror="this.style.display='none'">` : '';
+      document.getElementById('busBody').innerHTML = `<div class="tiles" style="margin-bottom:18px"><div class="tile"><label><i class="fa fa-bus"></i> Bus Number</label><div class="v">${bus.bus_number||'N/A'}</div></div><div class="tile"><label><i class="fa fa-circle-dot"></i> Status</label><div class="v">${bs}</div></div><div class="tile"><label><i class="fa fa-users"></i> Occupancy</label><div class="cap-track"><div class="cap-fill" style="width:${pct}%;background:${pc}"></div></div><div class="cap-lbl">${cur}/${lim} students</div></div>${dh}</div>${ph2}`;
+    }
+
+    // Route
+    if ((d.morning_stops && d.morning_stops.length) || (d.evening_stops && d.evening_stops.length)) {
+      document.getElementById('routeBody').innerHTML = `<div class="tab-row"><button class="tab-btn active" onclick="switchTab('m',this)"><i class="fa fa-sun"></i> Morning</button><button class="tab-btn" onclick="switchTab('e',this)"><i class="fa fa-moon"></i> Evening</button></div><div id="tp-m">${stopsTable(d.morning_stops,myStop)}</div><div id="tp-e" style="display:none">${stopsTable(d.evening_stops,myStop)}</div>`;
+    }
+
+    // Fees
+    if (d.fees && d.fees.length) {
+      const rows = d.fees.map(f => {
+        const st  = f.status==='paid'?'<span class="pill pill-green"><i class="fa fa-check"></i> Paid</span>':'<span class="pill pill-amber blink"><i class="fa fa-clock"></i> Pending</span>';
+        const act = f.status!=='paid'?`<button class="btn btn-pay" style="padding:4px 8px;font-size:.8rem;margin:0" onclick="payFee('${f.id}',this)"><i class="fa fa-credit-card"></i> Pay</button>`:`<span class="text-muted" style="font-size:.8rem">${(f.paidAt||'').substring(0,10)}</span>`;
+        return `<tr><td>${f.stopName||'N/A'}</td><td>${f.busNo||f.busId||'N/A'}</td><td>₹${f.amount}</td><td>${f.dueDate||'N/A'}</td><td>${st}</td><td>${act}</td></tr>`;
+      }).join('');
+      document.getElementById('feeBody').innerHTML = `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Stop</th><th>Bus</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    }
+
+    // Today's attendance
+    const att = d.attendance;
+    if (att) {
+      const as  = att.status==='present'?'<span class="pill pill-green"><i class="fa fa-check"></i> Present</span>':att.status?`<span class="pill pill-red">${att.status}</span>`:'<span class="pill pill-gray">N/A</span>';
+      const loc = (att.lat||att.latitude)&&(att.lng||att.longitude) ? (att.lat||att.latitude)+', '+(att.lng||att.longitude) : 'N/A';
+      document.getElementById('attBody').innerHTML = `<div class="att-tiles"><div class="att-tile"><label><i class="fa fa-circle-dot"></i> Status</label><div class="v">${as}</div></div><div class="att-tile"><label><i class="fa fa-clock"></i> Scanned At</label><div class="v">${att.scanned_at||att.timestamp||'N/A'}</div></div><div class="att-tile"><label><i class="fa fa-location-dot"></i> Location</label><div class="v">${loc}</div></div></div>`;
+    }
+
+    document.getElementById('overlay').style.display = 'none';
+    document.getElementById('main').style.display = '';
+  }
+</script>
+
+<script type="module">
+  /* ── Boot: read token from localStorage immediately, fetch data ── */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+  const fbApp = initializeApp({
+    apiKey: "AIzaSyBxWLk4onnZ6GUv-xQZZ7XQqVq045Qwl9I",
+    authDomain: "bus-management-660f7.firebaseapp.com",
+    projectId:  "bus-management-660f7",
+    appId:      "1:1084362165063:web:c0ee7b0c39f2e590985a62"
+  });
+  const fbAuth = getAuth(fbApp);
+
+  const el = id => document.getElementById(id);
+
+  function setStatus(msg) { el('loadStatus').textContent = msg; }
+  function showError(msg) {
+    el('loadErr').textContent = msg;
+    el('loadErr').style.display = 'block';
+    el('loginLink').style.display = '';
+    el('loadStatus').textContent = '';
+  }
+
+  async function fetchDash(token) {
+    const res  = await fetch('/api/dashboard', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error('Server returned non-JSON (HTTP ' + res.status + ')'); }
+    return { ok: res.ok, status: res.status, data };
+  }
+
+  async function boot() {
+    setStatus('Checking session…');
+    let token = localStorage.getItem('parent_token');
+
+    if (!token) {
+      setStatus('No session. Redirecting to login…');
+      setTimeout(() => { window.location.href = '/'; }, 1500);
+      return;
+    }
+
+    setStatus('Loading dashboard…');
+    console.log('[DASH] Fetching /api/dashboard with token:', token.substring(0,20)+'…');
+
+    let result;
+    try { result = await fetchDash(token); }
+    catch (e) { showError('Cannot reach server: ' + e.message); return; }
+
+    console.log('[DASH] Response:', result.status, result.data);
+
+    // Token expired → try Firebase refresh once
+    if (result.status === 401) {
+      setStatus('Session expired. Refreshing…');
+      const fresh = await new Promise(resolve => {
+        const unsub = onAuthStateChanged(fbAuth, async u => {
+          unsub();
+          if (u) { try { resolve(await u.getIdToken(true)); } catch { resolve(null); } }
+          else resolve(null);
         });
-        const auth = getAuth(firebaseApp);
+        setTimeout(() => resolve(null), 3000);
+      });
 
-        function setStatus(msg) {
-            const el = document.querySelector('#loadingOverlay div:nth-child(2)');
-            if (el) el.textContent = msg;
-        }
+      if (!fresh) {
+        localStorage.removeItem('parent_token');
+        showError('Your session has expired. Please log in again.');
+        setTimeout(() => { window.location.href = '/'; }, 2000);
+        return;
+      }
+      localStorage.setItem('parent_token', fresh);
+      try { result = await fetchDash(fresh); }
+      catch (e) { showError('Server error after refresh: ' + e.message); return; }
+    }
 
-        function showError(msg) {
-            document.getElementById('loadError').textContent = msg;
-            document.getElementById('loadError').style.display = 'block';
-            document.getElementById('loginLink').style.display = '';
-            setStatus('');
-        }
+    if (!result.ok) {
+      showError(result.data.error || 'Failed to load dashboard (HTTP ' + result.status + ').');
+      return;
+    }
 
-        async function safeApiJson(res) {
-            const text = await res.text();
-            try { return { ok: res.ok, status: res.status, data: JSON.parse(text) }; }
-            catch { return { ok: false, status: res.status, data: { error: 'Server error (HTTP ' + res.status + '). Check backend logs.' } }; }
-        }
+    populate(result.data);
+  }
 
-        async function boot() {
-            // ── Step 1: Get token from localStorage (instant, no waiting) ──
-            setStatus('Checking authentication…');
-            let token = localStorage.getItem('parent_token');
+  boot().catch(e => { showError('Unexpected error: ' + e.message + '. Try refreshing the page.'); });
 
-            if (!token) {
-                setStatus('No session found. Redirecting to login…');
-                setTimeout(() => { window.location.href = '/'; }, 1500);
-                return;
-            }
-
-            // ── Step 2: Fetch dashboard data ──
-            setStatus('Fetching your dashboard data…');
-            let result;
-            try {
-                const res = await fetch('/api/dashboard', {
-                    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
-                });
-                result = await safeApiJson(res);
-            } catch (e) {
-                showError('Cannot reach server: ' + e.message + '. Please check your internet connection.');
-                return;
-            }
-
-            // ── Step 3: If token expired (401), try Firebase refresh ──
-            if (result.status === 401) {
-                setStatus('Session expired. Refreshing token…');
-                try {
-                    const freshToken = await new Promise((resolve) => {
-                        const unsub = onAuthStateChanged(auth, async (u) => {
-                            unsub();
-                            if (u) { try { resolve(await u.getIdToken(true)); } catch { resolve(null); } }
-                            else resolve(null);
-                        });
-                        setTimeout(() => resolve(null), 3000);
-                    });
-
-                    if (!freshToken) {
-                        setStatus('Session has expired. Redirecting to login…');
-                        localStorage.removeItem('parent_token');
-                        setTimeout(() => { window.location.href = '/'; }, 1500);
-                        return;
-                    }
-
-                    localStorage.setItem('parent_token', freshToken);
-                    setStatus('Token refreshed. Reloading dashboard…');
-                    const res2 = await fetch('/api/dashboard', {
-                        headers: { 'Authorization': 'Bearer ' + freshToken, 'Content-Type': 'application/json' }
-                    });
-                    result = await safeApiJson(res2);
-                } catch (e) {
-                    showError('Token refresh failed: ' + e.message);
-                    return;
-                }
-            }
-
-            // ── Step 4: Handle final errors ──
-            if (!result.ok) {
-                showError(result.data.error || 'Dashboard load failed (HTTP ' + result.status + ').');
-                return;
-            }
-
-            // ── Step 5: Populate the page ──
-            setStatus('Rendering dashboard…');
-            populate(result.data);
-        }
-
-        // Start immediately — don't wait for Firebase state
-        boot().catch(e => { showError('Unexpected error: ' + e.message); });
-
-        // Background: if Firebase has a user, silently refresh the stored token
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try { localStorage.setItem('parent_token', await user.getIdToken()); } catch {}
-            }
-        });
-
-        function populate(d) {
-            const s = d.student || {};
-            const bus = d.bus;
-            const driver = d.driver;
-            const studentStop = d.student_stop || '';
-
-            const name = s.name || 'Parent';
-            document.getElementById('nav-name').textContent = name;
-            document.getElementById('greeting').textContent = 'Hello, ' + name + ' ✨';
-
-            if (s.status) {
-                const pill = document.getElementById('statusPill');
-                pill.className = s.status === 'active' ? 'pill pill-green' : 'pill pill-amber';
-                pill.innerHTML = s.status === 'active' ? '<i class="fa fa-circle-check"></i> Active' : s.status.charAt(0).toUpperCase() + s.status.slice(1);
-            }
-
-            document.getElementById('stuName').textContent = s.name || 'N/A';
-            document.getElementById('stuAdm').textContent = s.admission_number || 'N/A';
-            document.getElementById('stuRoll').textContent = s.rollNumber || s.roll_number || s.admission_number || 'N/A';
-            document.getElementById('stuPhone').textContent = s.phone_number || 'N/A';
-            if (studentStop) { document.getElementById('stuStop').textContent = studentStop; document.getElementById('stopChip').style.display = ''; }
-            if (s.parent_phone_number) { document.getElementById('parentPhone').textContent = s.parent_phone_number; document.getElementById('parentPhoneChip').style.display = ''; }
-            const photo = document.getElementById('stuPhoto');
-            photo.src = d.photo_url || '';
-            photo.style.display = '';
-            document.getElementById('pp').style.display = 'none';
-
-            if (bus) {
-                const cur = parseInt(bus.current_strength) || 0;
-                const lim = parseInt(bus.student_limit) || 1;
-                const pct = Math.min(Math.round(cur / lim * 100), 100);
-                const pctColor = pct < 80 ? '#22C55E' : pct < 100 ? '#F59E0B' : '#EF4444';
-                const statusHtml = bus.status === 'active' ? '<span class="pill pill-green">● Active</span>' : bus.status ? `<span class="pill pill-amber">${bus.status.charAt(0).toUpperCase() + bus.status.slice(1)}</span>` : '<span class="pill pill-gray">N/A</span>';
-                const driverHtml = driver ? `<div class="tile"><label><i class="fa fa-id-badge"></i> Driver</label><div class="v">${driver.name || 'N/A'}</div>${driver.phone ? `<div class="text-muted" style="margin-top:5px"><a href="tel:${driver.phone}" style="color:var(--lav-d);font-weight:600"><i class="fa fa-phone"></i> ${driver.phone}</a></div>` : ''}</div>` : '';
-                const permitHtml = d.permit_url ? `<div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px"><i class="fa fa-file-image"></i>&nbsp;Bus Permit</div><img src="${d.permit_url}" class="permit" alt="Permit" onerror="this.style.display='none'">` : '';
-                document.getElementById('busBody').innerHTML = `<div class="tiles" style="margin-bottom:18px"><div class="tile"><label><i class="fa fa-bus"></i> Bus Number</label><div class="v">${bus.bus_number || 'N/A'}</div></div><div class="tile"><label><i class="fa fa-circle-dot"></i> Status</label><div class="v">${statusHtml}</div></div><div class="tile"><label><i class="fa fa-users"></i> Occupancy</label><div class="cap-track"><div class="cap-fill" style="width:${pct}%;background:${pctColor}"></div></div><div class="cap-lbl">${cur}/${lim} students${pct >= 100 ? ' &nbsp;<span class="pill pill-red" style="font-size:.62rem;padding:2px 7px">FULL</span>' : ''}</div></div>${driverHtml}</div>${permitHtml}`;
-            }
-
-            if ((d.morning_stops && d.morning_stops.length) || (d.evening_stops && d.evening_stops.length)) {
-                document.getElementById('routeBody').innerHTML = `<div class="tab-row"><button class="tab-btn active" onclick="switchTab('m',this)"><i class="fa fa-sun"></i> Morning</button><button class="tab-btn" onclick="switchTab('e',this)"><i class="fa fa-moon"></i> Evening</button></div><div id="tp-m">${makeStopsTable(d.morning_stops, studentStop)}</div><div id="tp-e" style="display:none">${makeStopsTable(d.evening_stops, studentStop)}</div>`;
-            }
-
-            if (d.fees && d.fees.length) {
-                const rows = d.fees.map(fee => {
-                    const statusHtml = fee.status === 'paid' ? '<span class="pill pill-green"><i class="fa fa-check"></i> Paid</span>' : '<span class="pill pill-amber blink"><i class="fa fa-clock"></i> Pending</span>';
-                    const actionHtml = fee.status !== 'paid' ? `<button class="btn btn-pay" style="padding:4px 8px;font-size:0.8rem;margin:0" onclick="payFee('${fee.id}', this)"><i class="fa fa-credit-card"></i> Pay</button>` : `<span class="text-muted" style="font-size:0.8rem">${(fee.paidAt || '').substring(0, 10)}</span>`;
-                    return `<tr><td>${fee.stopName || 'N/A'}</td><td>${fee.busNo || fee.busId || 'N/A'}</td><td>₹${fee.amount}</td><td>${fee.dueDate || 'N/A'}</td><td>${statusHtml}</td><td>${actionHtml}</td></tr>`;
-                }).join('');
-                document.getElementById('feeBody').innerHTML = `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Stop Name</th><th>Bus No</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-            }
-
-            const att = d.attendance;
-            if (att) {
-                const attStatus = att.status === 'present' ? '<span class="pill pill-green"><i class="fa fa-check"></i> Present</span>' : att.status ? `<span class="pill pill-red">${att.status.charAt(0).toUpperCase() + att.status.slice(1)}</span>` : '<span class="pill pill-gray">N/A</span>';
-                const scannedAt = att.scanned_at || att.timestamp || 'N/A';
-                const alat = att.lat || att.latitude, alng = att.lng || att.longitude;
-                const loc = (alat && alng) ? alat + ', ' + alng : 'N/A';
-                const sessionHtml = att.session_id ? `<div class="att-tile"><label><i class="fa fa-key"></i> Session</label><div class="v" style="font-size:.73rem">${att.session_id}</div></div>` : '';
-                const deviceHtml = att.device_id ? `<div class="att-tile"><label><i class="fa fa-mobile"></i> Device</label><div class="v" style="font-size:.76rem">${att.device_id}</div></div>` : '';
-                document.getElementById('attBody').innerHTML = `<div class="att-tiles"><div class="att-tile"><label><i class="fa fa-circle-dot"></i> Status</label><div class="v">${attStatus}</div></div><div class="att-tile"><label><i class="fa fa-clock"></i> Last Scanned</label><div class="v">${scannedAt}</div></div><div class="att-tile"><label><i class="fa fa-location-dot"></i> Location</label><div class="v">${loc}</div></div>${sessionHtml}${deviceHtml}</div>`;
-            }
-
-            document.getElementById('loadingOverlay').style.display = 'none';
-            document.getElementById('mainContent').style.display = '';
-        }
-
-        // Wait for Firebase to restore session, then load dashboard
-        let loaded = false;
-        onAuthStateChanged(auth, async (user) => {
-            if (loaded) return;
-            loaded = true;
-            await loadDashboard(user);
-        });
-        // Fallback if Firebase auth takes too long (e.g. on Render cold start)
-        setTimeout(() => { if (!loaded) { loaded = true; loadDashboard(null); } }, 5000);
-    </script>
-
+  // Background: silently refresh stored token whenever Firebase has a live session
+  onAuthStateChanged(fbAuth, async u => {
+    if (u) { try { localStorage.setItem('parent_token', await u.getIdToken()); } catch {} }
+  });
+</script>
 </body>
-
 </html>

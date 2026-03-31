@@ -1,120 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Portal – Sign In</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Portal – Sign In</title>
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
-
 <body>
-
-    <div class="login-page">
-        <div class="login-card">
-
-            <div class="login-brand">
-                <div class="login-logo">🎓</div>
-                <h1>Student Portal</h1>
-                <p>Real-Time Bus Tracking System</p>
-            </div>
-
-            <div id="errBox" class="alert-error" style="display:none">
-                <i class="fa fa-triangle-exclamation"></i><span id="errMsg"></span>
-            </div>
-
-            <div class="fld">
-                <label for="email">Student Email</label>
-                <div class="fld-in">
-                    <i class="fa fa-envelope"></i>
-                    <input type="email" id="email" placeholder="student@example.com" autocomplete="email">
-                </div>
-            </div>
-
-            <div class="fld">
-                <label for="password">Password</label>
-                <div class="fld-in">
-                    <i class="fa fa-lock"></i>
-                    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
-                </div>
-            </div>
-
-            <button type="button" id="loginBtn" class="login-btn" onclick="doLogin()">
-                <i class="fa fa-right-to-bracket"></i> Sign In
-            </button>
-
-            <div style="text-align: center; margin-top: 15px; margin-bottom: 5px;">
-                <a href="/" style="color: var(--primary, #3b82f6); text-decoration: none; font-weight: 500; font-size: 0.9rem;">
-                    Are you a parent? <span style="text-decoration: underline;">Log in here</span> <i class="fa fa-arrow-right" style="font-size: 0.8rem; margin-left: 2px;"></i>
-                </a>
-            </div>
-
-            <div class="login-foot">🔒 Secured by Firebase Authentication</div>
-        </div>
+<div class="login-page">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="login-logo">🎓</div>
+      <h1>Student Portal</h1>
+      <p>Real-Time Bus Tracking System</p>
     </div>
 
-    <script>
-        // Fallback placeholder before Firebase module loads
-        window.doLogin = () => {
-            const errBox = document.getElementById('errBox');
-            const errMsg = document.getElementById('errMsg');
-            errMsg.textContent = "Firebase is still loading. Please wait a moment and try again.";
-            errBox.style.display = 'flex';
-        };
-    </script>
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    <div id="errBox" class="alert-error" style="display:none">
+      <i class="fa fa-triangle-exclamation"></i><span id="errMsg"></span>
+    </div>
 
-        const firebaseApp = initializeApp({
-            apiKey: "AIzaSyBxWLk4onnZ6GUv-xQZZ7XQqVq045Qwl9I",
-            authDomain: "bus-management-660f7.firebaseapp.com",
-            projectId: "bus-management-660f7",
-            appId: "1:1084362165063:web:c0ee7b0c39f2e590985a62"
-        });
-        const auth = getAuth(firebaseApp);
+    <div class="fld">
+      <label for="email">Email Address</label>
+      <div class="fld-in">
+        <i class="fa fa-envelope"></i>
+        <input type="email" id="email" placeholder="student@school.com" autocomplete="email">
+      </div>
+    </div>
 
-        window.doLogin = async () => {
-            const email  = document.getElementById('email').value.trim();
-            const pass   = document.getElementById('password').value;
-            const errBox = document.getElementById('errBox');
-            const errMsg = document.getElementById('errMsg');
-            const btn    = document.getElementById('loginBtn');
-            errBox.style.display = 'none';
+    <div class="fld">
+      <label for="password">Password</label>
+      <div class="fld-in">
+        <i class="fa fa-lock"></i>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+    </div>
 
-            if (!email || !pass) {
-                errMsg.textContent = 'Email and password are required.';
-                errBox.style.display = 'flex';
-                return;
-            }
+    <button type="button" id="loginBtn" class="login-btn" onclick="doLogin()">
+      <i class="fa fa-right-to-bracket"></i> Sign In as Student
+    </button>
 
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signing in…';
+    <div style="text-align:center;margin-top:15px">
+      <a href="/" style="color:var(--primary,#3b82f6);text-decoration:none;font-size:0.9rem;font-weight:500">
+        Are you a parent? <span style="text-decoration:underline">Log in here</span>
+      </a>
+    </div>
+    <div class="login-foot">🔒 Secured by Firebase Authentication</div>
+  </div>
+</div>
 
-            try {
-                const cred  = await signInWithEmailAndPassword(auth, email, pass);
-                const token = await cred.user.getIdToken(true);
-                localStorage.setItem('student_token', token);
-                localStorage.setItem('student_uid', cred.user.uid);
-                window.location.href = '/student-dashboard';
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-            } catch (err) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fa fa-right-to-bracket"></i> Sign In';
-                let msg = err.message || 'Login failed.';
-                if (msg.includes('user-not-found') || msg.includes('wrong-password') || msg.includes('invalid-credential')) {
-                    msg = 'Invalid email or password.';
-                } else if (msg.includes('too-many-requests')) {
-                    msg = 'Too many attempts. Please try later.';
-                }
-                errMsg.textContent = msg;
-                errBox.style.display = 'flex';
-            }
-        };
-        document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-    </script>
+  const app  = initializeApp({
+    apiKey: "AIzaSyBxWLk4onnZ6GUv-xQZZ7XQqVq045Qwl9I",
+    authDomain: "bus-management-660f7.firebaseapp.com",
+    projectId:  "bus-management-660f7",
+    appId:      "1:1084362165063:web:c0ee7b0c39f2e590985a62"
+  });
+  const auth = getAuth(app);
 
+  function showErr(msg) {
+    document.getElementById('errMsg').textContent = msg;
+    document.getElementById('errBox').style.display = 'flex';
+  }
+
+  window.doLogin = async function() {
+    const email = document.getElementById('email').value.trim();
+    const pass  = document.getElementById('password').value;
+    const btn   = document.getElementById('loginBtn');
+
+    document.getElementById('errBox').style.display = 'none';
+    if (!email || !pass) { showErr('Email and password are required.'); return; }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signing in…';
+
+    try {
+      const cred  = await signInWithEmailAndPassword(auth, email, pass);
+      const token = await cred.user.getIdToken(true);
+
+      localStorage.setItem('student_token', token);
+      localStorage.setItem('student_uid', cred.user.uid);
+
+      console.log('[STUDENT-LOGIN] Token stored. Redirecting…');
+      window.location.href = '/student-dashboard';
+    } catch (err) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa fa-right-to-bracket"></i> Sign In as Student';
+      let msg = err.message || 'Login failed.';
+      if (msg.includes('user-not-found') || msg.includes('wrong-password') || msg.includes('invalid-credential'))
+        msg = 'Invalid email or password.';
+      else if (msg.includes('too-many-requests'))
+        msg = 'Too many attempts. Please try again later.';
+      showErr(msg);
+    }
+  };
+
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') window.doLogin(); });
+</script>
 </body>
-
 </html>
