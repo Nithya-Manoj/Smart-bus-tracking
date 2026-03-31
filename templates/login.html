@@ -59,17 +59,11 @@
     </div>
 
     <script>
-        // Security fallback: Prevent users from silently breaking cookies by double-clicking the HTML file
-        if (window.location.protocol === 'file:') {
-            alert("You opened the HTML file directly instead of using the Flask server! Redirecting you to the active server...");
-            window.location.href = "http://127.0.0.1:5050/";
-        }
-
-        // Fallback placeholder before Firebase module loads over the network
+        // Fallback placeholder before Firebase module loads
         window.doLogin = () => {
             const errBox = document.getElementById('errBox');
             const errMsg = document.getElementById('errMsg');
-            errMsg.textContent = "Firebase authentication is still loading or was blocked by your network/adblocker! Please wait 5 seconds or allow googleapis.";
+            errMsg.textContent = "Firebase is still loading. Please wait a moment and try again.";
             errBox.style.display = 'flex';
         };
     </script>
@@ -77,29 +71,31 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        const app = initializeApp({
+        const firebaseApp = initializeApp({
             apiKey: "AIzaSyBxWLk4onnZ6GUv-xQZZ7XQqVq045Qwl9I",
             authDomain: "bus-management-660f7.firebaseapp.com",
             projectId: "bus-management-660f7",
             appId: "1:1084362165063:web:c0ee7b0c39f2e590985a62"
         });
-        const auth = getAuth(app);
+        const auth = getAuth(firebaseApp);
 
         window.doLogin = async () => {
             const email = document.getElementById('email').value.trim();
-            const pass = document.getElementById('password').value;
+            const pass  = document.getElementById('password').value;
             const errBox = document.getElementById('errBox');
             const errMsg = document.getElementById('errMsg');
-            const btn = document.getElementById('loginBtn');
+            const btn    = document.getElementById('loginBtn');
             errBox.style.display = 'none';
             if (!email || !pass) { errMsg.textContent = 'Email and password are required.'; errBox.style.display = 'flex'; return; }
             btn.disabled = true;
             btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signing in…';
             try {
-                const cred = await signInWithEmailAndPassword(auth, email, pass);
+                const cred  = await signInWithEmailAndPassword(auth, email, pass);
                 const token = await cred.user.getIdToken(true);
-                
-                document.cookie = "token=" + token + "; path=/;";
+                // Store token in localStorage — survives across tabs and deployments
+                localStorage.setItem('parent_token', token);
+                localStorage.setItem('parent_uid', cred.user.uid);
+                // Also store the Firebase user reference so dashboard can refresh it
                 window.location.href = '/dashboard';
             } catch (err) {
                 btn.disabled = false;
@@ -107,7 +103,6 @@
                 let msg = err.message || 'Login failed.';
                 if (msg.includes('user-not-found') || msg.includes('wrong-password') || msg.includes('invalid-credential')) msg = 'Invalid email or password.';
                 else if (msg.includes('too-many-requests')) msg = 'Too many attempts. Please try later.';
-                else if (msg.includes('No student found')) msg = 'No student linked to this account.';
                 errMsg.textContent = msg; errBox.style.display = 'flex';
             }
         };
