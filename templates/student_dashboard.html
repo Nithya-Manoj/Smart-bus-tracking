@@ -117,6 +117,18 @@
     window.location.href = '/student-login';
   }
 
+  async function payFee(feeId, btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    const token = localStorage.getItem('student_token');
+    try {
+      const res  = await fetch('/api/pay_fee/' + feeId, { method:'POST', headers:{ 'Authorization':'Bearer ' + token } });
+      const data = await res.json();
+      if (res.ok) { window.location.reload(); }
+      else { alert('Payment failed: ' + (data.error || 'Unknown error')); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
+    } catch(e) { alert('Network error: ' + e.message); btn.disabled = false; btn.innerHTML = '<i class="fa fa-credit-card"></i> Pay'; }
+  }
+
   function stopsTable(stops, myStop) {
     if (!stops || !stops.length) return '<div class="empty"><div class="ei">🛑</div><p>No stops.</p></div>';
     const rows = stops.map((s, i) => {
@@ -169,10 +181,11 @@
 
     if (d.fees && d.fees.length) {
       const rows = d.fees.map(f => {
-        const st = f.status==='paid'?'<span class="pill pill-green"><i class="fa fa-check"></i> Paid</span>':'<span class="pill pill-amber blink"><i class="fa fa-clock"></i> Pending</span>';
-        return `<tr><td>${f.stopName||'N/A'}</td><td>${f.busNo||f.busId||'N/A'}</td><td>₹${f.amount}</td><td>${f.dueDate||'N/A'}</td><td>${st}</td><td><span style="font-size:.8rem;color:var(--muted)">${f.status==='paid'?(f.paidAt||'').substring(0,10):'—'}</span></td></tr>`;
+        const st  = f.status==='paid'?'<span class="pill pill-green"><i class="fa fa-check"></i> Paid</span>':'<span class="pill pill-amber blink"><i class="fa fa-clock"></i> Pending</span>';
+        const act = f.status!=='paid'?`<button class="btn btn-pay" style="padding:4px 8px;font-size:.8rem;margin:0" onclick="payFee('${f.id}',this)"><i class="fa fa-credit-card"></i> Pay</button>`:`<span class="text-muted" style="font-size:.8rem">${(f.paidAt||'').substring(0,10)}</span>`;
+        return `<tr><td>${f.stopName||'N/A'}</td><td>${f.busNo||f.busId||'N/A'}</td><td>₹${f.amount}</td><td>${f.dueDate||'N/A'}</td><td>${st}</td><td>${act}</td></tr>`;
       }).join('');
-      document.getElementById('feeBody').innerHTML = `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Stop</th><th>Bus</th><th>Amount</th><th>Due</th><th>Status</th><th>Paid On</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      document.getElementById('feeBody').innerHTML = `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Stop</th><th>Bus</th><th>Amount</th><th>Due</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     const att = d.attendance;

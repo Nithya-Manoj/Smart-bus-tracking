@@ -92,6 +92,15 @@
     <div id="attBody" class="card-body"><div class="empty"><div class="ei">📋</div><p>No attendance record for today.</p></div></div>
   </div>
 
+  <!-- Attendance History -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-ico lav"><i class="fa fa-clock-rotate-left"></i></div>
+      <div><div class="ch">Attendance History</div><div class="cs">Recent scan records</div></div>
+    </div>
+    <div id="histBody" class="card-body"><div class="empty"><div class="ei">📊</div><p>No history.</p></div></div>
+  </div>
+
 </div><!-- /main -->
 
 <script>
@@ -191,6 +200,15 @@
       const as  = att.status==='present'?'<span class="pill pill-green"><i class="fa fa-check"></i> Present</span>':att.status?`<span class="pill pill-red">${att.status}</span>`:'<span class="pill pill-gray">N/A</span>';
       const loc = (att.lat||att.latitude)&&(att.lng||att.longitude) ? (att.lat||att.latitude)+', '+(att.lng||att.longitude) : 'N/A';
       document.getElementById('attBody').innerHTML = `<div class="att-tiles"><div class="att-tile"><label><i class="fa fa-circle-dot"></i> Status</label><div class="v">${as}</div></div><div class="att-tile"><label><i class="fa fa-clock"></i> Scanned At</label><div class="v">${att.scanned_at||att.timestamp||'N/A'}</div></div><div class="att-tile"><label><i class="fa fa-location-dot"></i> Location</label><div class="v">${loc}</div></div></div>`;
+    }
+
+    if (d.attendance_history && d.attendance_history.length) {
+      const rows = d.attendance_history.map(h => {
+        const hs = h.status==='present'?'<span class="pill pill-green"><i class="fa fa-check"></i> Present</span>':h.status?`<span class="pill pill-red">${h.status}</span>`:'<span class="pill pill-gray">N/A</span>';
+        const loc = (h.lat||h.latitude)&&(h.lng||h.longitude) ? (h.lat||h.latitude)+', '+(h.lng||h.longitude) : 'N/A';
+        return `<tr><td>${h.timestamp_str||'N/A'}</td><td>${hs}</td><td class="text-muted">${loc}</td></tr>`;
+      }).join('');
+      document.getElementById('histBody').innerHTML = `<div style="overflow-x:auto"><table class="dtbl"><thead><tr><th>Scan Time</th><th>Status</th><th>Location</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     }
 
     document.getElementById('overlay').style.display = 'none';
